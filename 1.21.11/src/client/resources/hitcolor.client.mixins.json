@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "dev.htcl.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "FrostMxn",
+    "LvStMxn",
+    "EntRdMxn",
+    "OvAcc",
+    "MdlFtMxn",
+    "CubeMxn"
+  ]
+}

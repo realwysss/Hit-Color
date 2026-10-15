@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "hitcolor",
+	"version": "${version}",
+	"name": "Hit Color",
+	"description": "change the red hit flash: any color, opacity, a gradient from bottom to top, armor, fade out, and choose who it shows on. press H for the settings.",
+	"authors": ["wysss"],
+	"contact": {"sources": "https://github.com/realwysss/Hit-Color"},
+	"license": "All-Rights-Reserved",
+	"icon": "assets/hitcolor/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.htcl.HtCl"],
+		"modmenu": ["dev.htcl.ModmenuIntgr"]
+	},
+	"mixins": [
+		{
+			"config": "hitcolor.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"suggests": {
+		"modmenu": "*"
+	},
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"fabric-api": "*",
+		"minecraft": ">=1.21.11 <1.22",
+		"java": ">=21"
+	}
+}
