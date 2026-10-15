@@ -30,6 +30,27 @@ public class Hc {
 		return b;
 	}
 
+	public static float st(float p) {
+		Cfg c = Cfg.c;
+		float x = switch (c.curve) {
+			case 0 -> 0f;
+			case 1 -> p;
+			case 2 -> p * p;
+			default -> 1f - (1f - p) * (1f - p);
+		};
+		float v = c.str + (c.endStr - c.str) * x;
+		if (c.pulses > 0) v *= 0.5f + 0.5f * (float) Math.cos(6.2831855f * c.pulses * p);
+		return Math.max(0f, Math.min(100f, v)) / 100f;
+	}
+
+	public static int gc(float t) {
+		Cfg c = Cfg.c;
+		if (!c.grad) return c.col;
+		if (c.stops < 3) return mix(c.col, c.col2, t);
+		float b = c.bias / 100f;
+		return t < b ? mix(c.col, c.colm, t / b) : mix(c.colm, c.col2, (t - b) / (1f - b));
+	}
+
 	static int mix(int a, int b, float t) {
 		int r = (int) ((a >> 16 & 255) + ((b >> 16 & 255) - (a >> 16 & 255)) * t);
 		int g = (int) ((a >> 8 & 255) + ((b >> 8 & 255) - (a >> 8 & 255)) * t);
@@ -40,14 +61,14 @@ public class Hc {
 	static void sync() {
 		Cfg c = Cfg.c;
 		DynamicTexture t = ((OvAcc) Minecraft.getInstance().gameRenderer.overlayTexture()).tex();
-		long s = (((long) c.col * 31 + c.col2) * 31 + c.str) * 2 + (c.grad ? 1 : 0);
+		long s = java.util.Objects.hash(c.col, c.col2, c.colm, c.grad, c.stops, c.bias, c.str, c.endStr, c.curve, c.pulses);
 		if (s == sig && t == last) return;
 		NativeImage im = t.getPixels();
 		if (im == null) return;
 		for (int r = 0; r < 8; r++) {
-			int cc = c.grad ? mix(c.col, c.col2, r / 7f) : c.col;
+			int cc = gc(r / 7f);
 			for (int u = 0; u < 16; u++) {
-				float a = 1f - c.str / 100f * (1f - u / 16f);
+				float a = 1f - st(u / 15f);
 				im.setPixel(u, r, Math.round(a * 255f) << 24 | cc);
 			}
 		}
@@ -63,14 +84,15 @@ public class Hc {
 		if (!(ms.state() instanceof LivingEntityRenderState s) || !s.hasRedOverlay) return;
 		sync();
 		HcSt h = (HcSt) s;
-		boolean en = h.hcSelf() ? c.sf : s.entityType == EntityType.PLAYER ? c.pl : c.mb;
+		boolean pv = h.hcSelf() && Minecraft.getInstance().screen instanceof dev.htcl.ui.Panel;
+		boolean en = pv || (h.hcSelf() ? c.sf : s.entityType == EntityType.PLAYER ? c.pl : c.mb);
 		boolean a = armor(rt);
 		off = !en;
 		arm = a && c.ar && en;
 		if (a && !arm) return;
 		act = true;
 		grad = c.grad;
-		fi = c.fade ? Math.max(0, Math.min(15, (int) ((1f - h.hcP()) * 15f))) : 0;
+		fi = Math.max(0, Math.min(15, Math.round((1f - h.hcP()) * 15f)));
 		Vec3 cam = Minecraft.getInstance().gameRenderer.getMainCamera().position();
 		feet = (float) (s.y - cam.y);
 		hgt = Math.max(0.1f, s.boundingBoxHeight);
@@ -98,8 +120,8 @@ public class Hc {
 
 	static int tint(int k, float t) {
 		Cfg c = Cfg.c;
-		int cc = grad ? mix(c.col, c.col2, t) : c.col;
-		float f = c.str / 100f * (1f - fi / 16f);
+		int cc = gc(t);
+		float f = st(fi / 15f) * c.arStr / 100f;
 		int r = Math.round(255 + ((cc >> 16 & 255) - 255) * f);
 		int g = Math.round(255 + ((cc >> 8 & 255) - 255) * f);
 		int b = Math.round(255 + ((cc & 255) - 255) * f);

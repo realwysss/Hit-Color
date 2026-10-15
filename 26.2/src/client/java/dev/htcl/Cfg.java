@@ -10,13 +10,19 @@ public class Cfg {
 	public boolean on = true;
 	public int col = 0xff2020;
 	public int col2 = 0xffb020;
+	public int colm = 0xff6020;
 	public boolean grad = false;
+	public int stops = 2;
+	public int bias = 50;
 	public int str = 50;
+	public int endStr = 0;
+	public int curve = 1;
+	public int pulses = 0;
 	public boolean pl = true;
 	public boolean mb = true;
 	public boolean sf = true;
 	public boolean ar = false;
-	public boolean fade = false;
+	public int arStr = 100;
 
 	static final Gson G = new GsonBuilder().setPrettyPrinting().create();
 	static final Path P = FabricLoader.getInstance().getConfigDir().resolve("hitcolor.json");
@@ -41,7 +47,14 @@ public class Cfg {
 	public static void fx() {
 		c.col &= 0xffffff;
 		c.col2 &= 0xffffff;
+		c.colm &= 0xffffff;
+		c.stops = Math.max(2, Math.min(3, c.stops));
+		c.bias = Math.max(10, Math.min(90, c.bias));
 		c.str = Math.max(0, Math.min(100, c.str));
+		c.endStr = Math.max(0, Math.min(100, c.endStr));
+		c.curve = Math.max(0, Math.min(3, c.curve));
+		c.pulses = Math.max(0, Math.min(4, c.pulses));
+		c.arStr = Math.max(0, Math.min(100, c.arStr));
 	}
 
 	public static void sv() {

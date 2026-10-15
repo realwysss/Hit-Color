@@ -15,6 +15,16 @@ public interface Canvas {
 
     int width(String s);
 
+    default void item(String id, float x, float y, float size) {
+    }
+
+    default boolean player(float x, float y, float w, float h) {
+        return false;
+    }
+
+    default void hurt() {
+    }
+
     default void fill(float x, float y, float w, float h, float r, int argb) {
         fill(x, y, w, h, r, argb, argb);
     }

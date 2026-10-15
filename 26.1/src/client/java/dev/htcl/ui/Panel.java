@@ -69,6 +69,10 @@ public final class Panel extends Screen implements Canvas {
 
     @Override
     public boolean keyPressed(KeyEvent e) {
+        if (dev.htcl.HtCl.key != null && dev.htcl.HtCl.key.matches(e) && !menu.typing()) {
+            onClose();
+            return true;
+        }
         int action = switch (e.key()) {
             case InputConstants.KEY_BACKSPACE -> Menu.BACK;
             case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> Menu.ENTER;
@@ -131,6 +135,31 @@ public final class Panel extends Screen implements Canvas {
     @Override
     public int width(String s) {
         return font.width(s);
+    }
+
+    @Override
+    public void item(String id, float x, float y, float size) {
+        net.minecraft.world.item.Item it = id.equals("anchor") ? net.minecraft.world.item.Items.RESPAWN_ANCHOR : net.minecraft.world.item.Items.END_CRYSTAL;
+        g.pose().pushMatrix();
+        g.pose().translate(x, y);
+        g.pose().scale(size / 16f, size / 16f);
+        g.item(new net.minecraft.world.item.ItemStack(it), 0, 0);
+        g.pose().popMatrix();
+    }
+
+    @Override
+    public boolean player(float x, float y, float w, float h) {
+        if (minecraft.player == null) return false;
+        net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(g, (int) x, (int) y, (int) (x + w), (int) (y + h), (int) (h * 0.42f), 0.0625f, x + w / 2f, y + h * 0.3f, minecraft.player);
+        return true;
+    }
+
+    @Override
+    public void hurt() {
+        if (minecraft.player != null) {
+            minecraft.player.hurtDuration = 10;
+            minecraft.player.hurtTime = 10;
+        }
     }
 
     private void quad(RenderPipeline p, float x, float y, float w, float h, int cu, int cv, int top, int bottom) {

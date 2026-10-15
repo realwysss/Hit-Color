@@ -2,23 +2,25 @@
 
 # Hit Color
 
-change the red flash on mobs and players when they get hit. pick any color and opacity, or a gradient that runs from the feet to the head.
+change the red flash on mobs and players when they get hit. pick any color, a gradient from the feet to the head, and shape how the flash fades.
 
-client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the settings (rebind it in Controls), or use Mod Menu. the settings menu is built into the mod, it only needs fabric api. color pickers with hex fields, a live figure that replays the hit, sliders and switches.
+client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the settings (press it again to close, rebind it in Controls), or use Mod Menu. the settings menu is built into the mod, it only needs fabric api.
 
-- **color**: any color and opacity
-- **gradient**: a second color, blended from the bottom of the body to the top
-- **armor**: tint the armor too, not just the skin
-- **fade out**: the flash fades away instead of cutting off
-- **show on**: choose players, mobs and yourself separately
+- **color**: any color with a hex field, and a strength slider
+- **gradient**: two or three colors blended from the feet to the head, with a slider for where the middle color sits
+- **fade**: hold, fade, late or early curves, a strength at the end of the flash, and up to four pulses
+- **armor**: tint the armor too, with its own strength
+- **show on**: players, mobs and yourself separately
+
+the settings screen shows your own player model with your skin. it takes a hit every three seconds, so every change shows up on the real thing at once.
 
 ## download
 
 | jar | minecraft |
 |---|---|
-| `hit-color-mc1.21.11-1.1.0.jar` | 1.21.11 |
-| `hit-color-mc26.1-1.1.0.jar` | 26.1 |
-| `hit-color-mc26.2-1.1.0.jar` | 26.2 |
+| `hit-color-mc1.21.11-1.2.0.jar` | 1.21.11 |
+| `hit-color-mc26.1-1.2.0.jar` | 26.1 |
+| `hit-color-mc26.2-1.2.0.jar` | 26.2 |
 
 on the releases page. fabric loader 0.16 or newer, fabric api.
 
@@ -32,11 +34,13 @@ on the releases page. fabric loader 0.16 or newer, fabric api.
 |---|---|
 | ![gradient](screenshots/gradient.png) | ![armor](screenshots/armor.png) |
 
-a docked settings bar at the bottom with a big live figure above it. the figure replays the hit whenever you change something, or when you click it.
+| color | gradient |
+|---|---|
+| ![color](screenshots/settings.png) | ![gradient settings](screenshots/settings2.png) |
 
-![settings](screenshots/settings.png)
-
-![settings small](screenshots/settings2.png)
+| effect | show |
+|---|---|
+| ![effect](screenshots/settings3.png) | ![show](screenshots/settings4.png) |
 
 ## why it does not lag
 
