@@ -39,8 +39,6 @@ public final class Panel extends Screen implements Canvas {
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
         if (minecraft.level == null) renderPanorama(g, delta);
-        Frost.request();
-        g.blurBeforeThisStratum();
     }
 
     @Override

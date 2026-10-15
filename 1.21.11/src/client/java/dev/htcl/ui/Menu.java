@@ -19,13 +19,15 @@ public final class Menu {
     public static final int TAB = 4;
     public static final int PASTE = 5;
     public static final int COPY = 6;
-    private static final int TEXT = 0xFFF3F4F8;
-    private static final int MUTED = 0xFF9BA1AE;
-    private static final int WELL = 0x42000000;
-    private static final int EDGE = 0x21FFFFFF;
-    private static final int[] BACKDROPS = {0xFF0C0D12, 0xFF3A1F1A, 0xFF2E4A66, 0xFFD8D2C4};
-    private static final String[] BACKDROP_NAMES = {"Night", "Nether", "Sky", "Sand"};
-    private static final String[] TABS = {"Color", "Gradient", "Show"};
+    private static final int INK = 0xFF22201C;
+    private static final int SOFT = 0xFF8A8478;
+    private static final int WELL = 0x14000000;
+    private static final int EDGE = 0x2A000000;
+    private static final int PAPER_TOP = 0xFFF8F3E9;
+    private static final int PAPER_BOT = 0xFFEAE3D4;
+    private static final int BASE_TOP = 0xFF9AA0AC;
+    private static final int BASE_BOT = 0xFF767B87;
+    private static final int ARMOR = 0xFF3FD0C8;
 
     public interface Drag {
         void to(double x, double y);
@@ -46,17 +48,16 @@ public final class Menu {
     private final float[] hsvB;
     private String active;
     private Drag drag;
-    private int tab;
-    private int backdrop;
     private String typing;
     private String hex = "";
     private float open;
     private long last;
     private float dt;
     private float clock;
+    private float hitAt;
+    private int sig;
     private double mx;
     private double my;
-    private String tip;
 
     public Menu(Runnable close, Supplier<String> clipboard) {
         this.close = close;
@@ -83,270 +84,236 @@ public final class Menu {
         mx = mouseX;
         my = mouseY;
         hits.clear();
-        tip = null;
-        open = ease(open, 1f, 9f);
+        open = ease(open, 1f, 8f);
         Cfg c = Cfg.c;
-
-        float cw = Math.min(width - 24, 430);
-        float ch = Math.min(height - 12, 252);
-        float x = (width - cw) / 2f;
-        float y = (height - ch) / 2f;
-        int acc = accent();
-
-        g.fill(0, 0, width, height, 0, fade(0x22000000), fade(0x7A000000));
-        g.shadow(x + cw * 0.18f, y + ch * 0.12f, cw * 0.64f, ch * 0.64f, 60, 70, fade(Colors.alpha(acc, 0.13f)));
-        g.shadow(x, y + 10, cw, ch, 16, 28, fade(0x99000000));
-        g.fill(x, y, cw, ch, 14, fade(0xAE262833), fade(0xC20F1015));
-        g.ring(x, y, cw, ch, 14, 1, fade(0x5CFFFFFF), fade(0x0FFFFFFF));
-
-        header(g, c, x, y, cw);
-        g.fill(x + 16, y + 32, cw - 32, 1, 0, fade(0x16FFFFFF));
-
-        float top = y + 42;
-        float bottom = y + ch - 36;
-        float lw = Math.max(108, Math.min(146, cw * 0.34f));
-        float lx = x + 14;
-        preview(g, c, lx, top, lw, bottom - top);
-
-        float rx = lx + lw + 12;
-        float rw = x + cw - 14 - rx;
-        segmented(g, "tabs", rx, top, rw, 18, TABS, tab, i -> {
-            commitHex();
-            tab = i;
-        });
-        float cy = top + 26;
-        float space = bottom - cy;
-        switch (tab) {
-            case 0 -> color(g, c, rx, cy, rw, space);
-            case 1 -> gradient(g, c, rx, cy, rw, space);
-            default -> show(g, c, rx, cy, rw, space);
+        int now2 = java.util.Objects.hash(c.col, c.col2, c.str, c.grad, c.ar, c.fade, c.on);
+        if (now2 != sig) {
+            if (sig != 0) hitAt = clock;
+            sig = now2;
         }
 
-        footer(g, x, y + ch - 28, cw);
+        float dw = Math.min(width - 24, 640);
+        float dh = Math.min(height - 24, 132);
+        float dx = (width - dw) / 2f;
+        float dy = height - 12 - dh + (1f - open) * 36f;
 
-        if (tip != null) {
-            float tw = g.width(tip) + 12;
-            float tx = (float) Math.min(mx + 10, width - tw - 4);
-            float ty = (float) Math.max(my - 18, 2);
-            g.shadow(tx, ty, tw, 15, 5, 6, fade(0x90000000));
-            g.fill(tx, ty, tw, 15, 5, fade(0xEE2A2C36), fade(0xEE1B1C23));
-            g.ring(tx, ty, tw, 15, 5, 1, fade(0x33FFFFFF), fade(0x0FFFFFFF));
-            g.text(tip, tx + 6, ty + 4, fade(TEXT));
-        }
-    }
+        g.fill(0, dy - 60, width, height - dy + 60, 0, fade(0x00000000), fade(0x66000000));
 
-    private void header(Canvas g, Cfg c, float x, float y, float w) {
-        g.text("Hit Color", x + 16, y + 12, fade(TEXT));
-        String state = c.on ? "On" : "Off";
-        float tx = x + w - 38;
-        float lx = tx - 6 - g.width(state);
-        Runnable flip = () -> c.on = !c.on;
-        g.text(state, lx, y + 12, fade(c.on ? TEXT : MUTED));
-        toggle(g, "master", tx, y + 10, c.on, flip);
-        hits.add(new Hit("masterrow", lx - 4, y + 6, tx + 26 - (lx - 4), 18, flip, null, null));
-    }
+        stage(g, c, width, dy);
+        title(g, c);
 
-    private void preview(Canvas g, Cfg c, float x, float y, float w, float h) {
-        g.fill(x, y, w, h, 10, fade(0x30000000), fade(0x58000000));
-        float bgT = anim("bg", backdrop, 10f);
-        int from = BACKDROPS[(int) Math.floor(bgT) % BACKDROPS.length];
-        int to = BACKDROPS[(int) Math.ceil(bgT) % BACKDROPS.length];
-        int bg = Colors.mix(from, to, bgT - (float) Math.floor(bgT));
-        g.fill(x + 3, y + 3, w - 6, h - 6, 8, fade(Colors.alpha(bg, 0.9f)), fade(Colors.mix(bg, 0xFF000000, 0.35f)));
-        g.ring(x, y, w, h, 10, 1, fade(0x38FFFFFF), fade(0x0AFFFFFF));
-        int label = Colors.luma(bg) > 0.55f ? 0xAA000000 : 0x99FFFFFF;
-        g.text("Preview", x + 10, y + 9, fade(label));
+        g.shadow(dx, dy + 8, dw, dh, 18, 30, fade(0x80000000));
+        g.fill(dx, dy, dw, dh, 16, fade(PAPER_TOP), fade(PAPER_BOT));
+        g.ring(dx, dy, dw, dh, 16, 1, fade(0x55FFFFFF), fade(0x22000000));
 
-        float fh = Math.min(h - 44, 96f);
-        float fw = fh * 0.5f;
-        float fx0 = x + (w - fw) / 2f;
-        float fy0 = y + 22 + (h - 44 - fh) / 2f;
-        float head = fh * 0.22f;
-        float body = fh * 0.38f;
-        float legs = fh - head - body - 2f;
-        float pulse = c.fade ? 0.6f + 0.4f * (float) Math.sin(clock * 3f) : 1f;
-        float[][] parts = {{fx0 + fw * 0.2f, fy0, fw * 0.6f, head}, {fx0, fy0 + head + 1f, fw, body}, {fx0 + fw * 0.1f, fy0 + head + body + 2f, fw * 0.8f, legs}};
-        for (float[] p : parts) {
-            g.fill(p[0], p[1], p[2], p[3], 3, fade(0xFF8D93A0), fade(0xFF6C717D));
-            float t0 = 1f - (p[1] + p[3] - fy0) / fh;
-            float t1 = 1f - (p[1] - fy0) / fh;
-            float a = Colors.clamp(c.str / 100f * pulse, 0f, 1f) * (c.on ? 1f : 0.2f);
-            int cTop = c.grad ? Colors.mix(0xFF000000 | c.col, 0xFF000000 | c.col2, t1) : 0xFF000000 | c.col;
-            int cBot = c.grad ? Colors.mix(0xFF000000 | c.col, 0xFF000000 | c.col2, t0) : 0xFF000000 | c.col;
-            g.fill(p[0], p[1], p[2], p[3], 3, fade(Colors.alpha(cTop, a)), fade(Colors.alpha(cBot, a)));
+        float pad = 16;
+        float iw = dw - pad * 2;
+        float gap = 16;
+        float w1 = (iw - gap * 2) * 0.35f;
+        float w2 = (iw - gap * 2) * 0.33f;
+        float w3 = iw - gap * 2 - w1 - w2;
+        float x1 = dx + pad;
+        float x2 = x1 + w1 + gap;
+        float x3 = x2 + w2 + gap;
+        float top = dy + 28;
+        float ph = Math.max(34, Math.min(46, dh - 88));
+
+        g.fill(x2 - gap / 2f, dy + 14, 1, dh - 60, 0, fade(0x16000000));
+        g.fill(x3 - gap / 2f, dy + 14, 1, dh - 60, 0, fade(0x16000000));
+
+        g.text("COLOR", x1, dy + 14, fade(SOFT));
+        picker(g, "a", () -> c.col, v -> c.col = v, hsvA, x1, top, w1, ph);
+        slider(g, "str", "Opacity", x1, top + ph + 9, w1, c.str, 0f, 100f, 1f, v -> c.str = (int) v, c.str + "%");
+
+        g.text("GRADIENT", x2, dy + 14, fade(SOFT));
+        toggle(g, "grad", x2 + w2 - 24, dy + 12, c.grad, () -> c.grad = !c.grad);
+        picker(g, "b", () -> c.col2, v -> c.col2 = v, hsvB, x2, top, w2, ph);
+        g.text("bottom color up to this", x2, top + ph + 11, fade(SOFT));
+        float dim = anim("dim", c.grad ? 0f : 1f, 12f);
+        if (dim > 0.01f) {
+            g.fill(x2 - 6, top - 4, w2 + 12, ph + 28, 8, fade(Colors.alpha(0xC8F1ECDF, dim)));
+            hits.add(new Hit("gradblock", x2 - 6, top - 4, w2 + 12, ph + 28, () -> {
+            }, null, null));
         }
 
-        float d = 8;
-        float gap = 7;
-        float total = BACKDROPS.length * d + (BACKDROPS.length - 1) * gap;
-        float dx = x + (w - total) / 2f;
-        float dy = y + h - 17;
-        for (int i = 0; i < BACKDROPS.length; i++) {
-            float px = dx + i * (d + gap);
-            boolean over = hover(px - 3, dy - 3, d + 6, d + 6);
-            float kk = anim("dot" + i, over ? 1f : 0f, 16f);
-            float s = d + kk * 2;
-            g.fill(px - kk, dy - kk, s, s, s / 2f, fade(BACKDROPS[i]));
-            g.ring(px - kk - 1.5f, dy - kk - 1.5f, s + 3, s + 3, (s + 3) / 2f, 1, fade(i == backdrop ? 0xDDFFFFFF : 0x40FFFFFF));
-            if (over) tip = BACKDROP_NAMES[i];
-            int idx = i;
-            hits.add(new Hit("dot" + i, px - 3, dy - 3, d + 6, d + 6, () -> backdrop = idx, null, null));
-        }
-    }
+        g.text("SHOW ON", x3, dy + 14, fade(SOFT));
+        chips(g, c, x3, top, w3);
 
-    private void color(Canvas g, Cfg c, float x, float y, float w, float space) {
-        float ph = Math.max(34, Math.min(66, space - 52));
-        g.text(c.grad ? "Bottom color" : "Hit color", x, y - 1, fade(MUTED));
-        picker(g, "a", () -> c.col, v -> c.col = v, hsvA, x, y + 10, w, ph);
-        float sy = y + 10 + ph + 10;
-        slider(g, "str", "Opacity", x, sy, w, c.str, 0f, 100f, 1f, v -> c.str = (int) v, c.str + "%");
-    }
-
-    private void gradient(Canvas g, Cfg c, float x, float y, float w, float space) {
-        row(g, "grad", "Gradient", null, x, y, w, c.grad, () -> c.grad = !c.grad);
-        float ph = Math.max(34, Math.min(66, space - 52));
-        g.text("Top color", x, y + 20, fade(c.grad ? MUTED : 0xFF5C6070));
-        picker(g, "b", () -> c.col2, v -> c.col2 = v, hsvB, x, y + 31, w, ph);
-        if (!c.grad) g.fill(x - 4, y + 28, w + 8, ph + 24, 8, fade(0x88101218));
-        if (!c.grad) hits.add(new Hit("gradblock", x - 4, y + 28, w + 8, ph + 24, () -> {
-        }, null, null));
-        g.text("Bottom is the first color, top is this one", x, y + 31 + ph + 8, fade(MUTED));
-    }
-
-    private void show(Canvas g, Cfg c, float x, float y, float w, float space) {
-        float step = 18;
-        float top = y + 1;
-        row(g, "pl", "Players", null, x, top, w, c.pl, () -> c.pl = !c.pl);
-        row(g, "mb", "Mobs", null, x, top + step, w, c.mb, () -> c.mb = !c.mb);
-        row(g, "sf", "Yourself", null, x, top + step * 2, w, c.sf, () -> c.sf = !c.sf);
-        row(g, "ar", "Armor", null, x, top + step * 3, w, c.ar, () -> c.ar = !c.ar);
-        row(g, "fd", "Fade out", null, x, top + step * 4, w, c.fade, () -> c.fade = !c.fade);
-        g.text("Armor gets a tint, it never shows the vanilla flash", x, top + step * 5 + 4, fade(MUTED));
-    }
-
-    private void footer(Canvas g, float x, float y, float w) {
-        float bw = 60;
-        float right = x + w - 14;
-        button(g, "done", "Done", right - bw, y, bw, true, () -> {
-            save();
-            close.run();
-        });
-        button(g, "cancel", "Cancel", right - bw * 2 - 8, y, bw, false, () -> {
-            cancel();
-            close.run();
-        });
-        button(g, "reset", "Defaults", x + 14, y, bw + 6, false, () -> {
+        float by = dy + dh - 28;
+        button(g, "reset", "Defaults", x1, by, 62, false, () -> {
             Cfg.c = new Cfg();
             System.arraycopy(Colors.hsv(Cfg.c.col), 0, hsvA, 0, 3);
             System.arraycopy(Colors.hsv(Cfg.c.col2), 0, hsvB, 0, 3);
         });
+        float right = dx + dw - pad;
+        button(g, "done", "Done", right - 62, by, 62, true, () -> {
+            save();
+            close.run();
+        });
+        button(g, "cancel", "Cancel", right - 62 * 2 - 8, by, 62, false, () -> {
+            cancel();
+            close.run();
+        });
     }
 
-    private void row(Canvas g, String id, String label, String note, float x, float y, float w, boolean on, Runnable flip) {
-        float h = note == null ? 16 : 26;
-        boolean over = hover(x - 4, y - 3, w + 8, h);
-        float k = anim(id + "row", over ? 1f : 0f, 14f);
-        if (k > 0.01f) g.fill(x - 4, y - 3, w + 8, h, 7, fade(Colors.alpha(0x16FFFFFF, k)), fade(Colors.alpha(0x0AFFFFFF, k)));
-        g.text(label, x + 2, y + 1, fade(on ? TEXT : MUTED));
-        toggle(g, id, x + w - 24, y - 1, on, flip);
-        hits.add(new Hit(id + "row", x - 4, y - 3, w + 8, h, flip, null, null));
+    private void title(Canvas g, Cfg c) {
+        float x = 14;
+        float y = 14;
+        float w = 128;
+        float h = 26;
+        g.shadow(x, y + 3, w, h, 13, 10, fade(0x55000000));
+        g.fill(x, y, w, h, 13, fade(PAPER_TOP), fade(PAPER_BOT));
+        g.text("Hit Color", x + 12, y + 9, fade(INK));
+        Runnable flip = () -> c.on = !c.on;
+        toggle(g, "master", x + w - 32, y + 7, c.on, flip);
+    }
+
+    private void stage(Canvas g, Cfg c, int width, float dockTop) {
+        float fh = Math.max(48f, Math.min(dockTop - 28f, 230f));
+        float u = fh / 32f;
+        float cx = width / 2f;
+        float fx0 = cx - 8 * u;
+        float fy0 = (dockTop - fh) / 2f - 2f;
+
+        float phase = clock - hitAt;
+        if (phase > 1.7f) {
+            hitAt = clock;
+            phase = 0f;
+        }
+        float k = phase < 0.5f ? (c.fade ? 1f - phase / 0.5f : 1f) : 0f;
+        if (!c.on) k = 0f;
+        float shake = phase < 0.25f ? (float) Math.sin(phase * 60f) * (0.25f - phase) * 6f * u * 0.2f : 0f;
+        float a = Colors.clamp(c.str / 100f, 0f, 1f) * k;
+        fx0 += shake;
+
+        boolean over = hover(fx0 - 4, fy0 - 4, 16 * u + 8, fh + 8);
+        g.fill(cx - 10 * u, fy0 + fh + 2, 20 * u, u * 1.4f, u * 0.7f, fade(0x44000000));
+
+        float[][] parts = {
+            {4, 0, 8, 8}, {4, 8, 8, 12}, {0, 8, 4, 12}, {12, 8, 4, 12}, {4, 20, 4, 12}, {8, 20, 4, 12}
+        };
+        for (int i = 0; i < parts.length; i++) {
+            float[] p = parts[i];
+            float px = fx0 + p[0] * u, py = fy0 + p[1] * u, pw = p[2] * u, ph = p[3] * u;
+            g.fill(px, py, pw, ph, u * 0.6f, fade(i == 0 ? 0xFFB5AB9C : BASE_TOP), fade(i == 0 ? 0xFF9A9082 : BASE_BOT));
+            paint(g, c, px, py, pw, ph, fy0, fh, a, 0xFF000000, 0f);
+        }
+        float[][] gear = {
+            {3.5f, -0.5f, 9f, 5.5f}, {3.5f, 8f, 9f, 12f}, {3.5f, 20f, 5f, 6f}, {7.5f, 20f, 5f, 6f}, {3.5f, 28f, 5f, 4.5f}, {7.5f, 28f, 5f, 4.5f}
+        };
+        for (float[] p : gear) {
+            float px = fx0 + p[0] * u, py = fy0 + p[1] * u, pw = p[2] * u, ph = p[3] * u;
+            g.fill(px, py, pw, ph, u * 0.5f, fade(0xFF58E4DC), fade(0xFF2BA8A2));
+            g.ring(px, py, pw, ph, u * 0.5f, Math.max(1f, u * 0.3f), fade(0x55FFFFFF), fade(0x22000000));
+            if (c.ar) paint(g, c, px, py, pw, ph, fy0, fh, a, 0xFFFFFFFF, 0.8f);
+        }
+
+        String hint = "click the figure to replay the hit";
+        g.text(hint, 16, 48, fade(0xE6FFFFFF));
+        hits.add(new Hit("figure", fx0 - 4, fy0 - 4, 16 * u + 8, fh + 8, () -> hitAt = clock, null, null));
+    }
+
+    private void paint(Canvas g, Cfg c, float px, float py, float pw, float ph, float fy0, float fh, float a, int base, float armor) {
+        if (a <= 0.001f) return;
+        float t1 = 1f - (py - fy0) / fh;
+        float t0 = 1f - (py + ph - fy0) / fh;
+        int top = c.grad ? Colors.mix(0xFF000000 | c.col, 0xFF000000 | c.col2, t1) : 0xFF000000 | c.col;
+        int bot = c.grad ? Colors.mix(0xFF000000 | c.col, 0xFF000000 | c.col2, t0) : 0xFF000000 | c.col;
+        float al = armor > 0f ? a * 0.75f : a;
+        g.fill(px, py, pw, ph, 3, fade(Colors.alpha(top, al)), fade(Colors.alpha(bot, al)));
+    }
+
+    private void chips(Canvas g, Cfg c, float x, float y, float w) {
+        String[] names = {"Players", "Mobs", "Yourself", "Armor tint", "Fade out"};
+        boolean[] vals = {c.pl, c.mb, c.sf, c.ar, c.fade};
+        Runnable[] flips = {() -> c.pl = !c.pl, () -> c.mb = !c.mb, () -> c.sf = !c.sf, () -> c.ar = !c.ar, () -> c.fade = !c.fade};
+        float cx = x;
+        float cy = y;
+        for (int i = 0; i < names.length; i++) {
+            float cw = g.width(names[i]) + 18;
+            if (cx + cw > x + w + 0.5f && cx > x) {
+                cx = x;
+                cy += 19;
+            }
+            chip(g, "chip" + i, names[i], cx, cy, cw, vals[i], flips[i]);
+            cx += cw + 6;
+        }
+    }
+
+    private void chip(Canvas g, String id, String label, float x, float y, float w, boolean on, Runnable flip) {
+        float h = 15;
+        boolean over = hover(x, y, w, h);
+        float t = anim(id, on ? 1f : 0f, 14f);
+        float k = anim(id + "h", over ? 1f : 0f, 14f);
+        int fillTop = Colors.mix(0x00000000, Colors.mix(INK, 0xFF55524A, 0.5f), t);
+        int fillBot = Colors.mix(0x00000000, INK, t);
+        g.fill(x, y, w, h, h / 2f, fade(Colors.mix(fillTop, 0x14000000, (1f - t) * k)), fade(Colors.mix(fillBot, 0x14000000, (1f - t) * k)));
+        g.ring(x, y, w, h, h / 2f, 1, fade(Colors.mix(0x44000000, INK, t)));
+        int tc = Colors.mix(0xFF5E5A50, 0xFFFFFFFF, t);
+        g.text(label, x + (w - g.width(label)) / 2f, y + 3.5f, fade(tc));
+        hits.add(new Hit(id, x, y, w, h, flip, null, null));
     }
 
     private void toggle(Canvas g, String id, float x, float y, boolean on, Runnable flip) {
         float w = 22;
         float h = 12;
         float t = anim(id, on ? 1f : 0f, 14f);
-        boolean over = hover(x - 2, y - 2, w + 4, h + 4);
-        float hl = anim(id + "h", over ? 1f : 0f, 14f);
         int acc = accent();
-        int topCol = Colors.mix(0x30FFFFFF, Colors.mix(acc, 0xFFFFFFFF, 0.18f), t);
-        int bottomCol = Colors.mix(WELL, acc, t);
-        g.fill(x, y, w, h, h / 2f, fade(Colors.mix(topCol, 0xFFFFFFFF, hl * 0.08f)), fade(bottomCol));
-        g.ring(x, y, w, h, h / 2f, 1, fade(0x33FFFFFF), fade(0x0DFFFFFF));
-        float k = 8 + hl;
+        g.fill(x, y, w, h, h / 2f, fade(Colors.mix(0x26000000, Colors.mix(acc, 0xFFFFFFFF, 0.1f), t)), fade(Colors.mix(0x3A000000, acc, t)));
+        g.ring(x, y, w, h, h / 2f, 1, fade(0x33000000), fade(0x0F000000));
+        float k = 8;
         float kx = x + 2 + (w - 4 - k) * t;
         float ky = y + (h - k) / 2f;
-        g.shadow(kx, ky + 0.5f, k, k, k / 2f, 2, fade(0x70000000));
-        g.fill(kx, ky, k, k, k / 2f, fade(0xFFFFFFFF), fade(0xFFE4E7EE));
+        g.shadow(kx, ky + 0.5f, k, k, k / 2f, 2, fade(0x55000000));
+        g.fill(kx, ky, k, k, k / 2f, fade(0xFFFFFFFF), fade(0xFFEDEDED));
         hits.add(new Hit(id, x - 2, y - 2, w + 4, h + 4, flip, null, null));
     }
 
     private void slider(Canvas g, String id, String label, float x, float y, float w, float v, float lo, float hi, float step, DoubleConsumer set, String shown) {
-        g.text(label, x, y, fade(MUTED));
-        g.text(shown, x + w - g.width(shown), y, fade(TEXT));
-        float ty = y + 11;
-        float th = 4;
+        g.text(label, x, y, fade(SOFT));
+        g.text(shown, x + w - g.width(shown), y, fade(INK));
+        float ty = y + 12;
+        float th = 5;
         float t = Colors.clamp((v - lo) / (hi - lo), 0f, 1f);
         boolean held = id.equals(active);
         float k = anim(id, held || hover(x - 4, ty - 6, w + 8, th + 12) ? 1f : 0f, 16f);
         float at = anim(id + "v", t, 22f);
         int acc = accent();
-        g.fill(x, ty, w, th, th / 2f, fade(WELL));
-        g.fill(x, ty, Math.max(th, w * at), th, th / 2f, fade(Colors.mix(acc, 0xFFFFFFFF, 0.25f)), fade(acc));
-        float s = 8 + k * 2;
+        g.fill(x, ty, w, th, th / 2f, fade(0x22000000));
+        g.fill(x, ty, Math.max(th, w * at), th, th / 2f, fade(Colors.mix(acc, 0xFFFFFFFF, 0.2f)), fade(acc));
+        float s = 9 + k * 2;
         float kx = x + w * at - s / 2f;
         float ky = ty + th / 2f - s / 2f;
-        if (k > 0.01f) g.fill(kx - 3 * k, ky - 3 * k, s + 6 * k, s + 6 * k, (s + 6 * k) / 2f, fade(Colors.alpha(acc & 0xFFFFFF | 0x40000000, k)));
-        g.shadow(kx, ky + 0.5f, s, s, s / 2f, 2.5f, fade(0x80000000));
-        g.fill(kx, ky, s, s, s / 2f, fade(0xFFFFFFFF), fade(0xFFE4E7EE));
+        g.shadow(kx, ky + 0.5f, s, s, s / 2f, 2.5f, fade(0x66000000));
+        g.fill(kx, ky, s, s, s / 2f, fade(0xFFFFFFFF), fade(0xFFE9E9E9));
+        g.ring(kx, ky, s, s, s / 2f, 1, fade(0x30000000));
         Drag d = (px, py) -> set.accept(snap(lo + (hi - lo) * Colors.clamp((float) ((px - x) / w), 0f, 1f), step, lo, hi));
         hits.add(new Hit(id, x - 4, ty - 7, w + 8, th + 14, null, d, a -> set.accept(snap(v + (float) Math.signum(a) * step * 5f, step, lo, hi))));
     }
 
-    private void segmented(Canvas g, String id, float x, float y, float w, float h, String[] items, int sel, IntConsumer pick) {
-        g.fill(x, y, w, h, h / 2f, fade(WELL));
-        g.ring(x, y, w, h, h / 2f, 1, fade(EDGE), fade(0x0AFFFFFF));
-        int n = items.length;
-        float[] edge = new float[n + 1];
-        float sum = 0;
-        for (String s : items) sum += g.width(s);
-        float pad = (w - sum) / n;
-        edge[0] = x;
-        for (int i = 0; i < n; i++) edge[i + 1] = edge[i] + g.width(items[i]) + pad;
-        edge[n] = x + w;
-        float px = anim(id, edge[sel], 16f);
-        float pw = anim(id + "w", edge[sel + 1] - edge[sel], 16f);
-        int acc = accent();
-        g.shadow(px + 2, y + 2, pw - 4, h - 4, (h - 4) / 2f, 3, fade(0x60000000));
-        g.fill(px + 2, y + 2, pw - 4, h - 4, (h - 4) / 2f, fade(0x36FFFFFF), fade(0x1CFFFFFF));
-        g.ring(px + 2, y + 2, pw - 4, h - 4, (h - 4) / 2f, 1, fade(Colors.alpha(acc, 0.75f)), fade(Colors.alpha(acc, 0.25f)));
-        for (int i = 0; i < n; i++) {
-            float ix = edge[i];
-            float iw = edge[i + 1] - ix;
-            boolean over = hover(ix, y, iw, h);
-            float k = anim(id + i, over ? 1f : 0f, 14f);
-            int col = i == sel ? TEXT : Colors.mix(MUTED, TEXT, k * 0.6f);
-            g.text(items[i], ix + (iw - g.width(items[i])) / 2f, y + (h - 8) / 2f, fade(col));
-            int idx = i;
-            hits.add(new Hit(id + i, ix, y, iw, h, () -> pick.accept(idx), null, a -> pick.accept(Math.floorMod(sel - (int) Math.signum(a), n))));
-        }
-    }
-
     private void button(Canvas g, String id, String label, float x, float y, float w, boolean main, Runnable run) {
-        float h = 18;
+        float h = 20;
         boolean over = hover(x, y, w, h);
         float k = anim(id, over ? 1f : 0f, 14f);
-        int acc = accent();
-        g.shadow(x, y + 1, w, h, 7, 5, fade(0x70000000));
         if (main) {
-            g.fill(x, y, w, h, 7, fade(Colors.mix(Colors.mix(acc, 0xFFFFFFFF, 0.22f), 0xFFFFFFFF, k * 0.12f)), fade(Colors.mix(acc, 0xFFFFFFFF, k * 0.08f)));
-            g.ring(x, y, w, h, 7, 1, fade(0x55FFFFFF), fade(0x14FFFFFF));
+            g.shadow(x, y + 1, w, h, 10, 5, fade(0x55000000));
+            g.fill(x, y, w, h, 10, fade(Colors.mix(0xFF4A473F, 0xFF66625A, k)), fade(Colors.mix(INK, 0xFF3A372F, k)));
+            g.text(label, x + (w - g.width(label)) / 2f, y + 6, fade(0xFFFFFFFF));
         } else {
-            g.fill(x, y, w, h, 7, fade(Colors.mix(0x26FFFFFF, 0x3DFFFFFF, k)), fade(Colors.mix(0x12FFFFFF, 0x22FFFFFF, k)));
-            g.ring(x, y, w, h, 7, 1, fade(0x2EFFFFFF), fade(0x0AFFFFFF));
+            g.fill(x, y, w, h, 10, fade(Colors.mix(0x00000000, 0x16000000, k)));
+            g.ring(x, y, w, h, 10, 1, fade(Colors.mix(0x40000000, 0x66000000, k)));
+            g.text(label, x + (w - g.width(label)) / 2f, y + 6, fade(INK));
         }
-        int tc = main && Colors.luma(acc) > 0.62f ? 0xFF15161B : TEXT;
-        g.text(label, x + (w - g.width(label)) / 2f, y + 5, fade(tc));
         hits.add(new Hit(id, x, y, w, h, run, null, null));
     }
 
     private void picker(Canvas g, String id, IntSupplier get, IntConsumer set, float[] hsv, float x, float y, float w, float h) {
         int col = get.getAsInt();
-        float sw = Math.round(w * 0.52f);
+        float sw = Math.round(w * 0.46f);
         int hueCol = 0xFF000000 | Colors.fromHsv(hsv[0], 1f, 1f);
-        g.shadow(x, y + 1, sw, h, 7, 5, fade(0x70000000));
+        g.shadow(x, y + 1, sw, h, 7, 5, fade(0x44000000));
         g.sv(x, y, sw, h, 7, fade(hueCol));
-        g.ring(x, y, sw, h, 7, 1, fade(0x33FFFFFF), fade(0x14FFFFFF));
+        g.ring(x, y, sw, h, 7, 1, fade(0x33000000), fade(0x14000000));
         float mxp = x + hsv[1] * sw;
         float myp = y + (1f - hsv[2]) * h;
         g.shadow(mxp - 4.5f, myp - 4.5f, 9, 9, 4.5f, 2, fade(0x90000000));
@@ -361,12 +328,12 @@ public final class Menu {
 
         float rx = x + sw + 10;
         float rw = w - sw - 10;
-        g.shadow(rx, y + 1, rw, 12, 6, 3, fade(0x60000000));
+        g.shadow(rx, y + 1, rw, 12, 6, 3, fade(0x40000000));
         g.hue(rx, y, rw, 12, 6, fade(0xFFFFFFFF));
-        g.ring(rx, y, rw, 12, 6, 1, fade(0x33FFFFFF), fade(0x14FFFFFF));
+        g.ring(rx, y, rw, 12, 6, 1, fade(0x33000000), fade(0x14000000));
         float hx = rx + hsv[0] * rw;
-        g.shadow(hx - 3.5f, y - 2, 7, 16, 3.5f, 2, fade(0x90000000));
-        g.fill(hx - 3.5f, y - 2, 7, 16, 3.5f, fade(0xFFFFFFFF), fade(0xFFE4E7EE));
+        g.shadow(hx - 3.5f, y - 2, 7, 16, 3.5f, 2, fade(0x70000000));
+        g.fill(hx - 3.5f, y - 2, 7, 16, 3.5f, fade(0xFFFFFFFF), fade(0xFFE9E9E9));
         g.fill(hx - 2, y + 0.5f, 4, 11, 2, fade(hueCol));
         hits.add(new Hit(id + "hue", rx - 3, y - 3, rw + 6, 18, null, (px, py) -> {
             hsv[0] = Colors.clamp((float) ((px - rx) / rw), 0f, 0.9999f);
@@ -379,25 +346,23 @@ public final class Menu {
 
         float fy = y + 20;
         float sq = 18;
-        float fw = rw - sq - 6;
+        float fw = rw;
         boolean focus = id.equals(typing) && active == null;
         float k = anim(id + "hex", focus ? 1f : hover(rx, fy, fw, sq) ? 0.4f : 0f, 14f);
-        g.fill(rx, fy, fw, sq, 7, fade(WELL), fade(0x30000000));
-        g.ring(rx, fy, fw, sq, 7, 1, fade(Colors.mix(EDGE, accent(), k)), fade(Colors.mix(0x0AFFFFFF, accent(), k * 0.5f)));
-        String shown = focus ? "#" + hex : Colors.hex(col);
-        g.text(shown, rx + 7, fy + 5, fade(focus && !valid(hex) ? 0xFFFF8080 : TEXT));
+        g.fill(rx, fy, fw, sq, 7, fade(WELL), fade(0x1E000000));
+        g.ring(rx, fy, fw, sq, 7, 1, fade(Colors.mix(EDGE, accent(), k)), fade(Colors.mix(0x14000000, accent(), k * 0.5f)));
+        String shown = focus ? hex : Colors.hex(col).substring(1);
+        g.fill(rx + 5, fy + 5, 8, 8, 4, fade(0xFF000000 | col));
+        g.ring(rx + 5, fy + 5, 8, 8, 4, 1, fade(0x44000000));
+        g.text(shown, rx + 17, fy + 5, fade(focus && !valid(hex) ? 0xFFD03030 : INK));
         if (focus && (clock % 1f) < 0.55f) {
-            float cx = rx + 7 + g.width(shown) + 1;
-            g.fill(cx, fy + 4, 1, 10, 0, fade(TEXT));
+            float cx = rx + 17 + g.width(shown) + 1;
+            g.fill(cx, fy + 4, 1, 10, 0, fade(INK));
         }
         hits.add(new Hit(id + "hexf", rx, fy, fw, sq, () -> {
             typing = id;
             hex = Colors.hex(get.getAsInt()).substring(1);
         }, null, null));
-        float sx = rx + rw - sq;
-        g.shadow(sx, fy + 1, sq, sq, 7, 4, fade(Colors.alpha(0xFF000000 | col, 0.45f)));
-        g.fill(sx, fy, sq, sq, 7, fade(0xFF000000 | Colors.mix(0xFF000000 | col, 0xFFFFFFFF, 0.18f)), fade(0xFF000000 | col));
-        g.ring(sx, fy, sq, sq, 7, 1, fade(0x55FFFFFF), fade(0x14FFFFFF));
     }
 
     private void commitHex() {
@@ -500,10 +465,6 @@ public final class Menu {
                 }
             }
         }
-        if (action == TAB) {
-            tab = (tab + 1) % TABS.length;
-            return true;
-        }
         return false;
     }
 
@@ -524,7 +485,7 @@ public final class Menu {
     private int accent() {
         int b = Cfg.c.col;
         int col = 0xFF000000 | b;
-        return Colors.luma(b) < 0.22f ? 0xFF000000 | Colors.mix(col, 0xFFFFFFFF, 0.4f) : col;
+        return Colors.luma(b) > 0.8f ? 0xFF000000 | Colors.mix(col, 0xFF000000, 0.35f) : col;
     }
 
     private boolean hover(float x, float y, float w, float h) {

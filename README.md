@@ -4,7 +4,7 @@
 
 change the red flash on mobs and players when they get hit. pick any color and opacity, or a gradient that runs from the feet to the head.
 
-client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the settings (rebind it in Controls), or use Mod Menu. the settings menu is built into the mod, it only needs fabric api. color picker with hex field, a live preview, sliders and switches.
+client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the settings (rebind it in Controls), or use Mod Menu. the settings menu is built into the mod, it only needs fabric api. color pickers with hex fields, a live figure that replays the hit, sliders and switches.
 
 - **color**: any color and opacity
 - **gradient**: a second color, blended from the bottom of the body to the top
@@ -16,9 +16,9 @@ client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the setti
 
 | jar | minecraft |
 |---|---|
-| `hit-color-mc1.21.11-1.0.0.jar` | 1.21.11 |
-| `hit-color-mc26.1-1.0.0.jar` | 26.1 |
-| `hit-color-mc26.2-1.0.0.jar` | 26.2 |
+| `hit-color-mc1.21.11-1.1.0.jar` | 1.21.11 |
+| `hit-color-mc26.1-1.1.0.jar` | 26.1 |
+| `hit-color-mc26.2-1.1.0.jar` | 26.2 |
 
 on the releases page. fabric loader 0.16 or newer, fabric api.
 
@@ -32,7 +32,11 @@ on the releases page. fabric loader 0.16 or newer, fabric api.
 |---|---|
 | ![gradient](screenshots/gradient.png) | ![armor](screenshots/armor.png) |
 
+a docked settings bar at the bottom with a big live figure above it. the figure replays the hit whenever you change something, or when you click it.
+
 ![settings](screenshots/settings.png)
+
+![settings small](screenshots/settings2.png)
 
 ## why it does not lag
 
