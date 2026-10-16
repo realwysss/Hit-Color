@@ -4,7 +4,7 @@
 
 change the red flash on mobs and players when they get hit. pick any color, a gradient from the feet to the head, and shape how the flash fades.
 
-client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the settings (press it again to close, rebind it in Controls), or use Mod Menu. the settings menu is built into the mod, it only needs fabric api.
+client side fabric mod for 1.21.11, 26.1 and 26.2. press **H** to open the settings (press it again to close, rebind it in Controls), or use Mod Menu. the settings menu needs [Wysss Library](https://github.com/realwysss/Wysss-Library) to open (fabric api and Wysss Library).
 
 - **color**: any color with a hex field, and a strength slider
 - **gradient**: two or three colors blended from the feet to the head, with a slider for where the middle color sits
@@ -18,9 +18,9 @@ the settings screen shows your own player model with your skin. it takes a hit e
 
 | jar | minecraft |
 |---|---|
-| `hit-color-mc1.21.11-1.2.0.jar` | 1.21.11 |
-| `hit-color-mc26.1-1.2.0.jar` | 26.1 |
-| `hit-color-mc26.2-1.2.0.jar` | 26.2 |
+| `hit-color-mc1.21.11-1.3.0.jar` | 1.21.11 |
+| `hit-color-mc26.1-1.3.0.jar` | 26.1 |
+| `hit-color-mc26.2-1.3.0.jar` | 26.2 |
 
 on the releases page. fabric loader 0.16 or newer, fabric api.
 

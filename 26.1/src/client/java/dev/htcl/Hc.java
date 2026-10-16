@@ -121,12 +121,22 @@ public class Hc {
 	static int tint(int k, float t) {
 		Cfg c = Cfg.c;
 		int cc = gc(t);
-		float f = st(fi / 15f) * c.arStr / 100f;
-		int r = Math.round(255 + ((cc >> 16 & 255) - 255) * f);
-		int g = Math.round(255 + ((cc >> 8 & 255) - 255) * f);
-		int b = Math.round(255 + ((cc & 255) - 255) * f);
+		float f = Math.min(1f, st(fi / 15f) * c.arStr / 100f * 2.2f);
+		float mr = (cc >> 16 & 255) / 255f, mg = (cc >> 8 & 255) / 255f, mb = (cc & 255) / 255f;
+		float mx = Math.max(0.05f, Math.max(mr, Math.max(mg, mb)));
+		mr = (float) Math.pow(mr / mx, 1.6);
+		mg = (float) Math.pow(mg / mx, 1.6);
+		mb = (float) Math.pow(mb / mx, 1.6);
+		int r = Math.round(255 * (1f + (mr - 1f) * f));
+		int g = Math.round(255 * (1f + (mg - 1f) * f));
+		int b = Math.round(255 * (1f + (mb - 1f) * f));
 		int ka = k >>> 24, kr = (k >> 16 & 255) * r / 255, kg = (k >> 8 & 255) * g / 255, kb = (k & 255) * b / 255;
 		return ka << 24 | kr << 16 | kg << 8 | kb;
+	}
+
+	public static int lit(int l) {
+		if (!act || !arm) return l;
+		return st(fi / 15f) > 0.08f ? 0xF000F0 : l;
 	}
 
 	public static int tc(int k) {
